@@ -99,12 +99,12 @@ public class MainActivity extends AppCompatActivity {
         ImageView iv = view.findViewById(R.id.iv_banner);
         iv.setImageResource(adInfo.adImgRes);
         iv.setTag(adInfo.landingUrl);
-        AdMonitorManager.regAdView(iv, new AdMonitorManager.AdMonitorAttr()
-                .setPlaceEventId("position_banner")
-                .setAdTag(adInfo.tvTitle)
-                .setIndexInfo(String.valueOf(index))
-                .setShowRptUrls(adInfo.showRptUrls)
-                .setClickRptUrls(adInfo.clickRptUrls));
+//        AdMonitorManager.regAdView(iv, new AdMonitorManager.AdMonitorAttr()
+//                .setPlaceEventId("position_banner")
+//                .setAdTag(adInfo.tvTitle)
+//                .setIndexInfo(String.valueOf(index))
+//                .setShowRptUrls(adInfo.showRptUrls)
+//                .setClickRptUrls(adInfo.clickRptUrls));
         return view;
     }
 

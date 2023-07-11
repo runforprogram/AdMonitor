@@ -27,10 +27,10 @@ public class ScrollingActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
-        AdMonitorManager.regAdView(fab, new AdMonitorManager
-                .AdMonitorAttr()
-                .setIndexInfo("0-0")
-                .setPlaceEventId("event_id_aa")
-                .setAdTag("广告标识符"));
+//        AdMonitorManager.regAdView(fab, new AdMonitorManager
+//                .AdMonitorAttr()
+//                .setIndexInfo("0-0")
+//                .setPlaceEventId("event_id_aa")
+//                .setAdTag("广告标识符"));
     }
 }

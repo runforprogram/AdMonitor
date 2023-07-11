@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 
 import com.google.gson.Gson;
@@ -81,15 +82,13 @@ public class AdMonitorManager {
 
     private static void addViewTreeObserverListener(final View view) {
         ViewTreeObserver viewTreeObserver = view.getViewTreeObserver();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            viewTreeObserver.addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
-                @Override
-                public void onDraw() {
-                    //发生绘制事件时有可能会变更显示状态
-                    onAdViewShowStateChanged(view, isViewShow(view));
-                }
-            });
-        }
+        viewTreeObserver.addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
+            @Override
+            public void onDraw() {
+                //发生绘制事件时有可能会变更显示状态
+                onAdViewShowStateChanged(view, isViewShow(view));
+            }
+        });
         viewTreeObserver.addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
             @Override
             public void onScrollChanged() {
@@ -97,21 +96,19 @@ public class AdMonitorManager {
                 onAdViewShowStateChanged(view, isViewShow(view));
             }
         });
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            viewTreeObserver.addOnWindowAttachListener(new ViewTreeObserver.OnWindowAttachListener() {
-                @Override
-                public void onWindowAttached() {
-                    //重新着附于窗口事件时有可能会变更显示状态
-                    onAdViewShowStateChanged(view, isViewShow(view));
-                }
+        viewTreeObserver.addOnWindowAttachListener(new ViewTreeObserver.OnWindowAttachListener() {
+            @Override
+            public void onWindowAttached() {
+                //重新着附于窗口事件时有可能会变更显示状态
+                onAdViewShowStateChanged(view, isViewShow(view));
+            }
 
-                @Override
-                public void onWindowDetached() {
-                    //此时一定为不显示状态
-                    onAdViewShowStateChanged(view, false);
-                }
-            });
-        }
+            @Override
+            public void onWindowDetached() {
+                //此时一定为不显示状态
+                onAdViewShowStateChanged(view, false);
+            }
+        });
     }
 
     /**
@@ -267,6 +264,11 @@ public class AdMonitorManager {
         if (adViewsList == null) {
             return;
         }
+        if (isViewCovered(view)) {
+            Log.d(TAG, "is covered");
+        }else {
+            Log.d(TAG, "is not  covered");
+        }
         AdViews adViewsTarget = null;
         for (AdViews adView : adViewsList) {
             if (adView.adView.equals(view)) {
@@ -312,6 +314,50 @@ public class AdMonitorManager {
             //完成事件生成后更新同步控件显示状态
             adViewsTarget.setShow(false);
         }
+    }
+    // 待验证 ，检查view是否被其他view遮挡
+    // 关于 View 是否被其他 View 遮挡的问题，貌似只有一种解决方案——循环查找父级 View 以及兄弟 View 然后判断两者的 Rect 区域是否有交际。
+    public static boolean isViewCovered(final View view) {
+        View currentView = view;
+
+        Rect currentViewRect = new Rect();
+        boolean partVisible = currentView.getGlobalVisibleRect(currentViewRect);
+        boolean totalHeightVisible = (currentViewRect.bottom - currentViewRect.top) >= view.getMeasuredHeight();
+        boolean totalWidthVisible = (currentViewRect.right - currentViewRect.left) >= view.getMeasuredWidth();
+        boolean totalViewVisible = partVisible && totalHeightVisible && totalWidthVisible;
+        // if any part of the view is clipped by any of its parents,return true
+        if (!totalViewVisible)
+            return true;
+
+        while (currentView.getParent() instanceof ViewGroup) {
+            ViewGroup currentParent = (ViewGroup) currentView.getParent();
+            // if the parent of view is not visible,return true
+            if (currentParent.getVisibility() != View.VISIBLE)
+                return true;
+
+            int start = indexOfViewInParent(currentView, currentParent);
+            for (int i = start + 1; i < currentParent.getChildCount(); i++) {
+                Rect viewRect = new Rect();
+                view.getGlobalVisibleRect(viewRect);
+                View otherView = currentParent.getChildAt(i);
+                Rect otherViewRect = new Rect();
+                otherView.getGlobalVisibleRect(otherViewRect);
+                // if view intersects its older brother(covered),return true
+                if (Rect.intersects(viewRect, otherViewRect))
+                    return true;
+            }
+            currentView = currentParent;
+        }
+        return false;
+    }
+
+    private static int indexOfViewInParent(View view, ViewGroup parent) {
+        int index;
+        for (index = 0; index < parent.getChildCount(); index++) {
+            if (parent.getChildAt(index) == view)
+                break;
+        }
+        return index;
     }
 
     private static void onAdShow(AdMonitorAttr adMonitorAttr) {
